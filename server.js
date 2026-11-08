@@ -21,3 +21,10 @@ const PORTA = process.env.PORTA || 3000;
 app.listen(PORTA, () => {
     console.log(`Servidor rodando na porta ${PORTA}`);
 });
+
+const rotasAuth = require('./routes/authRoutes');
+app.use('/api/auth', rotasAuth); 
+
+//  Rotas do Mural de Avisos
+const rotasAvisos = require('./routes/avisosRoutes');
+app.use('/api/avisos', rotasAvisos);
