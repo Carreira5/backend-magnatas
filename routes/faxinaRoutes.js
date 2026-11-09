@@ -5,5 +5,6 @@ const verificarToken = require('../middlewares/authMiddleware');
 
 router.get('/', verificarToken, faxinaController.listar);
 router.post('/', verificarToken, faxinaController.criar);
+router.put('/:id/concluir', verificarToken, faxinaController.concluir);
 
 module.exports = router;

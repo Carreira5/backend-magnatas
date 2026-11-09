@@ -35,4 +35,17 @@ const criar = async (req, res) => {
     }
 };
 
-module.exports = { listar, criar };
+const concluir = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Muda o status da tarefa para "Concluído" no banco de dados
+        const query = 'UPDATE tarefas_faxina SET status = "Concluído" WHERE id = ?';
+        await banco.query(query, [id]);
+        res.status(200).json({ mensagem: 'Tarefa concluída com sucesso!' });
+    } catch (erro) {
+        console.error(erro);
+        res.status(500).json({ erro: 'Erro ao concluir tarefa.' });
+    }
+};
+
+module.exports = { listar, criar, concluir };

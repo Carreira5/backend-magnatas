@@ -37,4 +37,17 @@ const criar = async (req, res) => {
     }
 };
 
-module.exports = { listar, criar };
+const deletar = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Apaga o aviso do banco de dados
+        const query = 'DELETE FROM avisos WHERE id = ?';
+        await banco.query(query, [id]);
+        res.status(200).json({ mensagem: 'Aviso apagado!' });
+    } catch (erro) {
+        console.error(erro);
+        res.status(500).json({ erro: 'Erro ao apagar aviso.' });
+    }
+};
+
+module.exports = { listar, criar, deletar };
