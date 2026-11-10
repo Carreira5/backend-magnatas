@@ -1,8 +1,7 @@
 const banco = require('../config/banco');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken'); // Adicionamos a biblioteca do Token
+const jwt = require('jsonwebtoken');
 
-// --- Função de Registro (Já estava pronta) ---
 const registar = async (req, res) => {
     try {
         const { nome, email, senha } = req.body;
@@ -14,10 +13,11 @@ const registar = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const senhaHash = await bcrypt.hash(senha, salt);
 
+        // MUDANÇA: Quem se cadastrar por fora nasce como 'visitante', preso na sala de espera
         const query = 'INSERT INTO usuarios (nome, email, senha_hash, perfil) VALUES (?, ?, ?, ?)';
-        await banco.query(query, [nome, email, senhaHash, 'admin']);
+        await banco.query(query, [nome, email, senhaHash, 'visitante']);
 
-        res.status(201).json({ mensagem: 'Usuário cadastrado com sucesso!' });
+        res.status(201).json({ mensagem: 'Cadastro em análise! Aguarde aprovação de um morador.' });
 
     } catch (erro) {
         console.error(erro);
@@ -25,7 +25,6 @@ const registar = async (req, res) => {
     }
 };
 
-// --- NOVA Função de Login ---
 const login = async (req, res) => {
     try {
         const { email, senha } = req.body;
@@ -34,31 +33,31 @@ const login = async (req, res) => {
             return res.status(400).json({ erro: 'Preencha email e senha.' });
         }
 
-        // 1. Busca o usuário no banco pelo email
         const [linhas] = await banco.query('SELECT * FROM usuarios WHERE email = ?', [email]);
         
-        // Se o array estiver vazio, o usuário não existe
         if (linhas.length === 0) {
             return res.status(401).json({ erro: 'Email ou senha incorretos.' });
         }
 
         const usuario = linhas[0];
-
-        // 2. Compara a senha digitada com o hash salvo no banco
         const senhaCorreta = await bcrypt.compare(senha, usuario.senha_hash);
         
         if (!senhaCorreta) {
             return res.status(401).json({ erro: 'Email ou senha incorretos.' });
         }
 
-        // 3. Gera o Token JWT (A chave de acesso do usuário)
+        // 🛑 O SEGURANÇA DA DISCOTECA ENTRA AQUI 🛑
+        if (usuario.perfil === 'visitante') {
+            return res.status(403).json({ erro: 'Acesso bloqueado: Sua conta ainda está em análise. Aguarde a aprovação.' });
+        }
+
+        // Se passou, gera o Token
         const token = jwt.sign(
             { id: usuario.id, perfil: usuario.perfil }, 
             process.env.CHAVE_JWT, 
-            { expiresIn: '24h' } // O token expira em 1 dia
+            { expiresIn: '24h' } 
         );
 
-        // Devolve o token e os dados básicos (sem a senha)
         res.status(200).json({
             mensagem: 'Login efetuado com sucesso!',
             token: token,
@@ -75,5 +74,4 @@ const login = async (req, res) => {
     }
 };
 
-// Exportamos as duas funções agora
 module.exports = { registar, login };
