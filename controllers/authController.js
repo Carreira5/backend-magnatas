@@ -2,28 +2,35 @@ const banco = require('../config/banco');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const registar = async (req, res) => {
+const registrar = async (req, res) => {
     try {
-        const { nome, email, senha } = req.body;
+        // 1. Agora o backend "puxa" o apelido que foi digitado no front-end
+        const { nome, apelido, email, senha } = req.body; 
 
-        if (!nome || !email || !senha) {
-            return res.status(400).json({ erro: 'Preencha todos os campos obrigatórios.' });
+        const [existente] = await banco.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        if (existente.length > 0) {
+            return res.status(400).json({ erro: 'Este e-mail já está em uso.' });
         }
 
+        const bcrypt = require('bcrypt');
         const salt = await bcrypt.genSalt(10);
-        const senhaHash = await bcrypt.hash(senha, salt);
+        const senha_hash = await bcrypt.hash(senha, salt);
 
-        // MUDANÇA: Quem se cadastrar por fora nasce como 'visitante', preso na sala de espera
-        const query = 'INSERT INTO usuarios (nome, email, senha_hash, perfil) VALUES (?, ?, ?, ?)';
-        await banco.query(query, [nome, email, senhaHash, 'visitante']);
+        // 2. A MÁGICA DA AUTOMAÇÃO: Salva o apelido e crava o perfil 'visitante' direto no banco!
+        await banco.query(
+            'INSERT INTO usuarios (nome, apelido, email, senha_hash, perfil, status_morador) VALUES (?, ?, ?, ?, ?, ?)', 
+            [nome, apelido, email, senha_hash, 'visitante', 'ativo']
+        );
 
-        res.status(201).json({ mensagem: 'Cadastro em análise! Aguarde aprovação de um morador.' });
-
+        res.status(201).json({ mensagem: 'Cadastro em análise! Redirecionando...' });
     } catch (erro) {
         console.error(erro);
-        res.status(500).json({ erro: 'Erro interno do servidor.' });
+        res.status(500).json({ erro: 'Erro no servidor ao registrar.' });
     }
 };
+
+// Certifique-se de que no final do arquivo as duas funções estão sendo exportadas:
+// module.exports = { login, registrar };
 
 const login = async (req, res) => {
     try {
@@ -74,4 +81,4 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { registar, login };
+module.exports = { registrar, login };
