@@ -30,6 +30,13 @@ const aprovarMorador = async (req, res) => {
         res.status(500).json({ erro: 'Erro ao aprovar usuário.' });
     }
 };
+const recusarMorador = async (req, res) => {
+    try {
+        await banco.query('DELETE FROM usuarios WHERE id = ?', [req.params.id]);
+        res.status(200).json({ mensagem: 'Solicitação recusada e apagada.' });
+    } catch (erro) {
+        res.status(500).json({ erro: 'Erro ao recusar visitante.' });
+    }
+};
 
-// Exportamos as 3 funções
-module.exports = { listarTodos, listarPendentes, aprovarMorador };
+module.exports = { listarTodos, listarPendentes, aprovarMorador, recusarMorador};

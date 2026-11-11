@@ -17,10 +17,6 @@ app.get('/', (req, res) => {
     res.send('API da República rodando!');
 });
 
-const PORTA = process.env.PORTA || 3000;
-app.listen(PORTA, () => {
-    console.log(`Servidor rodando na porta ${PORTA}`);
-});
 
 //  Rotas do Mural de Avisos
 const rotasAvisos = require('./routes/avisosRoutes');
@@ -31,3 +27,17 @@ app.use('/api/despesas', rotasDespesas);
 
 const rotasFaxina = require('./routes/faxinaRoutes');
 app.use('/api/faxina', rotasFaxina);
+
+const rotasUsuarios = require('./routes/usuariosRoutes');
+app.use('/api/usuarios', rotasUsuarios);
+
+// Só inicia o servidor se NÃO estiver rodando testes
+const PORTA = process.env.PORTA || 3000;
+if (require.main === module) {
+    app.listen(PORTA, () => {
+        console.log(`Servidor rodando na porta ${PORTA}`);
+    });
+}
+
+// Exporta o app para o Jest conseguir testar as rotas
+module.exports = app;
