@@ -35,4 +35,14 @@ const criar = async (req, res) => {
     }
 };
 
-module.exports = { listar, criar };
+const zerarMes = async (req, res) => {
+    try {
+        await banco.query('DELETE FROM despesas');
+        res.status(200).json({ mensagem: 'Mês zerado.' });
+    } catch (erro) {
+        res.status(500).json({ erro: 'Erro interno.' });
+    }
+};
+
+
+module.exports = { listar, criar, zerarMes };

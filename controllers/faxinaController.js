@@ -18,17 +18,16 @@ const listar = async (req, res) => {
 
 const criar = async (req, res) => {
     try {
-        const { descricao, data_limite } = req.body;
-        const morador_id = req.usuario.id; 
+        const { descricao, data_limite, responsavel_id } = req.body;
 
-        if (!descricao || !data_limite) {
-            return res.status(400).json({ erro: 'Preencha a descrição e a data limite.' });
+        if (!descricao || !data_limite || !responsavel_id) {
+            return res.status(400).json({ erro: 'Preencha todos os campos.' });
         }
 
-        const query = 'INSERT INTO tarefas_faxina (descricao, morador_id, data_limite) VALUES (?, ?, ?)';
-        await banco.query(query, [descricao, morador_id, data_limite]);
+        const query = 'INSERT INTO tarefas_faxina (descricao, morador_id, data_limite, status) VALUES (?, ?, ?, "Pendente")';
+        await banco.query(query, [descricao, responsavel_id, data_limite]);
 
-        res.status(201).json({ mensagem: 'Tarefa de faxina criada com sucesso!' });
+        res.status(201).json({ mensagem: 'Tarefa de faxina delegada com sucesso!' });
     } catch (erro) {
         console.error(erro);
         res.status(500).json({ erro: 'Erro ao criar tarefa de faxina.' });
@@ -38,14 +37,33 @@ const criar = async (req, res) => {
 const concluir = async (req, res) => {
     try {
         const { id } = req.params;
-        // Muda o status da tarefa para "Concluído" no banco de dados
-        const query = 'UPDATE tarefas_faxina SET status = "Concluído" WHERE id = ?';
-        await banco.query(query, [id]);
+        const query = "UPDATE tarefas_faxina SET status = 'concluida' WHERE id = ?";
+        
+        // O banco guarda o resultado da operação aqui
+        const [resultado] = await banco.query(query, [id]);
+        
+        // Se o banco executou, mas não mudou nenhuma linha (ID não bate)
+        if (resultado.affectedRows === 0) {
+            return res.status(404).json({ erro: `A tarefa de ID ${id} não foi encontrada no banco de dados.` });
+        }
+        
         res.status(200).json({ mensagem: 'Tarefa concluída com sucesso!' });
     } catch (erro) {
-        console.error(erro);
-        res.status(500).json({ erro: 'Erro ao concluir tarefa.' });
+        console.error('ERRO DETALHADO DO BANCO:', erro);
+        // Manda a mensagem exata do erro do MySQL para a tela do site!
+        res.status(500).json({ erro: erro.message });
     }
 };
 
-module.exports = { listar, criar, concluir };
+const apagarTarefa = async (req, res) => {
+    try {
+        await banco.query('DELETE FROM tarefas_faxina WHERE id = ?', [req.params.id]);
+        res.status(200).json({ mensagem: 'Tarefa apagada.' });
+    } catch (erro) {
+        res.status(500).json({ erro: 'Erro ao apagar tarefa.' });
+    }
+};
+// Adicione 'apagarTarefa' no module.exports
+
+
+module.exports = { listar, criar, concluir, apagarTarefa };
